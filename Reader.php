@@ -24,6 +24,10 @@ class Reader
     /** @var array */
     protected $token;
 
+    protected $_enteredKeys = [];
+    protected $_currentEnteredKey;
+    protected $_enteredKeysLastIndex = -1;
+
     /**
      * @param resource $resource
      */
@@ -56,9 +60,11 @@ class Reader
                 $tokens = array(Tokenizer::TOKEN_ARRAY_START, Tokenizer::TOKEN_OBJECT_START);
         }
 
-        if ($this->token['key'] != $key || !in_array($this->token['token'], $tokens)) {
+        if ($this->token === false || ($key !== null && ($this->token['key'] != $key || !in_array($this->token['token'], $tokens)))) {
             return false;
         }
+
+        $this->_enteredKeys[] = $this->_currentEnteredKey = $this->token['key'];
 
         $this->next();
 
@@ -88,6 +94,8 @@ class Reader
             }
 
         } while ($this->next() && $level >= 0 && $this->tokenizer->context());
+        $this->_currentEnteredKey = array_pop($this->_enteredKeys) === null ? null : end($this->_enteredKeys);
+        reset($this->_enteredKeys);
 
         return true;
     }
@@ -147,4 +155,8 @@ class Reader
         return $this->token = $this->tokenizer->next();
     }
 
+    public function lastEnteredKey()
+    {
+        return $this->_currentEnteredKey;
+    }
 }
